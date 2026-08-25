@@ -12,9 +12,14 @@ Usage in nodes:
 from __future__ import annotations
 
 import os
+from typing import Any
+
+from dotenv import load_dotenv
+
+load_dotenv()
 
 
-def get_llm(model: str | None = None, temperature: float = 0.0):
+def get_llm(model: str | None = None, temperature: float = 0.0) -> Any:
     """Create an LLM client from environment configuration.
 
     Checks for API keys in this order:
@@ -29,8 +34,9 @@ def get_llm(model: str | None = None, temperature: float = 0.0):
             from langchain_google_genai import ChatGoogleGenerativeAI
         except ImportError as exc:
             raise RuntimeError("Install: pip install langchain-google-genai") from exc
+        resolved: str = model or os.getenv("LLM_MODEL") or "gemini-2.5-flash"
         return ChatGoogleGenerativeAI(
-            model=model or os.getenv("LLM_MODEL", "gemini-2.5-flash"),
+            model=resolved,
             google_api_key=os.getenv("GEMINI_API_KEY"),
             temperature=temperature,
         )
@@ -40,20 +46,16 @@ def get_llm(model: str | None = None, temperature: float = 0.0):
             from langchain_openai import ChatOpenAI
         except ImportError as exc:
             raise RuntimeError("Install: pip install langchain-openai") from exc
-        return ChatOpenAI(
-            model=model or os.getenv("LLM_MODEL", "gpt-4o-mini"),
-            temperature=temperature,
-        )
+        resolved = model or os.getenv("LLM_MODEL") or "gpt-4o-mini"
+        return ChatOpenAI(model=resolved, temperature=temperature)
 
     if os.getenv("ANTHROPIC_API_KEY"):
         try:
             from langchain_anthropic import ChatAnthropic
         except ImportError as exc:
             raise RuntimeError("Install: pip install langchain-anthropic") from exc
-        return ChatAnthropic(
-            model=model or os.getenv("LLM_MODEL", "claude-sonnet-4-20250514"),
-            temperature=temperature,
-        )
+        resolved = model or os.getenv("LLM_MODEL") or "claude-sonnet-4-20250514"
+        return ChatAnthropic(model=resolved, temperature=temperature)
 
     raise RuntimeError(
         "No LLM API key found. Set GEMINI_API_KEY, OPENAI_API_KEY, or ANTHROPIC_API_KEY in .env\n"
